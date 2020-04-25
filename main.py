@@ -51,6 +51,17 @@ dataset_sizes = {'train': len(data_loaders['train'].dataset),
 class_names = ['covid', 'background']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+# Load and save the images if they haven't been saved already
+images_folder = os.path.join(os.path.abspath(__file__), '..', 'images')
+
+if not os.listdir(images_folder):
+    index = 0
+    for sample in data_loaders["train"].dataset.imgs:
+        image_name = f"Image_{index}.png"
+        plt.imsave(os.path.join(images_folder, image_name), sample[0])
+        print(f"Saved {image_name}")
+        index += 1
+
 # Training loop starter
 num_epochs = 1      # Set this yourself
 
