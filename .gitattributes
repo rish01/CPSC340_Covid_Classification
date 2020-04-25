@@ -1,0 +1,7 @@
+data/test_images_512.pk filter=lfs diff=lfs merge=lfs -text
+data/train_images_512.pk filter=lfs diff=lfs merge=lfs -text
+data/train_labels_512.pk filter=lfs diff=lfs merge=lfs -text
+data filter=lfs diff=lfs merge=lfs -text
+datatest_images_512.pk filter=lfs diff=lfs merge=lfs -text
+datatrain_images_512.pk filter=lfs diff=lfs merge=lfs -text
+datatrain_labels_512.pk filter=lfs diff=lfs merge=lfs -text
