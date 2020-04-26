@@ -52,13 +52,26 @@ class_names = ['covid', 'background']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load and save the images if they haven't been saved already
-images_folder = os.path.join(os.path.abspath(__file__), '..', 'images')
+training_images_rgb_folder = os.path.join(os.path.abspath(__file__), '..', 'training_images_rgb')
+training_images_grayscale_folder = os.path.join(os.path.abspath(__file__), '..', 'training_images_grayscale')
+test_images_rgb_folder = os.path.join(os.path.abspath(__file__), '..', 'test_images_rgb')
+test_images_grayscale_folder = os.path.join(os.path.abspath(__file__), '..', 'test_images_grayscale')
 
-if not os.listdir(images_folder):
+if not os.listdir(training_images_rgb_folder):
     index = 0
     for sample in data_loaders["train"].dataset.imgs:
+        image_name = f"Image_{index}_covid{train_labels[index].numpy()}.png"
+        plt.imsave(os.path.join(training_images_rgb_folder, image_name), sample[0])
+        plt.imsave(os.path.join(training_images_grayscale_folder, image_name), sample[0], cmap='gray')
+        print(f"Saved {image_name}")
+        index += 1
+
+if not os.listdir(test_images_rgb_folder):
+    index = 0
+    for sample in data_loaders["test"].dataset.imgs:
         image_name = f"Image_{index}.png"
-        plt.imsave(os.path.join(images_folder, image_name), sample[0])
+        plt.imsave(os.path.join(test_images_rgb_folder, image_name), sample[0])
+        plt.imsave(os.path.join(test_images_grayscale_folder, image_name), sample[0], cmap='gray')
         print(f"Saved {image_name}")
         index += 1
 
