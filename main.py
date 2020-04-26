@@ -81,21 +81,29 @@ if not os.listdir(test_images_rgb_folder):
         print(f"Saved {image_name}")
         index += 1
 
-training = True
+training = False
 predicting = True
-model_json_file = 'first_model.json'
-model_name = 'first_model.h5'
+model_json_file = 'ImageNet_model.json'
+model_name = 'ImageNet_model.h5'
 
 # ################################################ KERAS MODEL ##################################################### #
 if training:
     print("Starting Keras Neural Network Training!")
     model = Sequential()
 
-    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(3, 512, 512), data_format='channels_first'))
-    model.add(Conv2D(32, 3, 3, activation='relu'))
+    model.add(Conv2D(64, (3, 3), activation='relu', input_shape=(3, 512, 512), data_format='channels_first', padding="same"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(128, (3, 3), activation='relu', padding="same"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(256, (3, 3), activation='relu', padding="same"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding="same"))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(512, (3, 3), activation='relu', padding="same"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Flatten())
+    model.add(Dense(4096, activation='relu'))
     model.add(Dense(128, activation='relu'))
     # model.add(Dropout(0.5))
     model.add(Dense(1, activation='sigmoid'))
