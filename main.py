@@ -13,6 +13,11 @@ import time
 import os
 import copy
 import pandas as pd
+from sklearn.decomposition import SparsePCA, PCA
+import skimage.io
+import skimage.restoration
+import skimage.exposure
+import cv2.cv2 as cv2
 
 import pickle
 
@@ -53,6 +58,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load and save the images if they haven't been saved already
 images_folder = os.path.join(os.path.abspath(__file__), '..', 'images')
+grayscale_images_folder = os.path.join(os.path.abspath(__file__), '..', 'grayscale_images')
 
 if not os.listdir(images_folder):
     index = 0
@@ -61,6 +67,35 @@ if not os.listdir(images_folder):
         plt.imsave(os.path.join(images_folder, image_name), sample[0])
         print(f"Saved {image_name}")
         index += 1
+
+if not os.listdir(grayscale_images_folder):
+    index = 0
+    for sample in data_loaders["train"].dataset.imgs:
+        image_name = f"Image_{index}.png"
+        plt.imsave(os.path.join(grayscale_images_folder, image_name), sample[0], cmap='gray')
+        print(f"Saved {image_name}")
+        index += 1
+
+image_5_gray = os.path.join(grayscale_images_folder, 'Image_5.png')
+img = cv2.imread(image_5_gray)
+mask = cv2.threshold(img, 230, 255, cv2.THRESH_BINARY)[1][:,:,0]
+dst = cv2.inpaint(img, mask, 7, cv2.INPAINT_NS)
+
+# # Remove text from images
+# X = data_loaders["train"].dataset.imgs[5][0]
+# sparsePCA_model = SparsePCA(n_components=15, alpha=0.01)
+# Z_sparse = sparsePCA_model.fit_transform(X)
+# W_sparse = sparsePCA_model.components_
+# X_recons_sparse = Z_sparse@W_sparse
+# plt.imshow(X_recons_sparse)
+#
+# pca_model = PCA(n_components=5)
+# Z = pca_model.fit_transform(X)
+# W = pca_model.components_
+# X_recons = Z@W
+#
+# print("Debug")
+
 
 # Training loop starter
 num_epochs = 1      # Set this yourself
