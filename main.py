@@ -13,6 +13,12 @@ import time
 import os
 import copy
 import pandas as pd
+import json
+
+from keras.models import Sequential, load_model, model_from_json
+from keras.layers import Dense, Dropout, Activation, Flatten
+from keras.layers import Convolution2D, MaxPooling2D, Conv2D
+from keras.utils import np_utils
 
 import pickle
 
@@ -75,15 +81,45 @@ if not os.listdir(test_images_rgb_folder):
         print(f"Saved {image_name}")
         index += 1
 
-# Training loop starter
-num_epochs = 1      # Set this yourself
+training = True
+predicting = True
+model_json_file = 'first_model.json'
+model_name = 'first_model.h5'
 
-for epoch in range(num_epochs):
-    for sample in data_loaders["train"]:
-        pass
-    # Image shape
-    # Batch size x Channels x Width x Height
-    print(sample[0].shape)
-    # Labels shape
-    # Batch size
-    print(sample[1].shape)
+# ################################################ KERAS MODEL ##################################################### #
+if training:
+    print("Starting Keras Neural Network Training!")
+    model = Sequential()
+
+    model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(3, 512, 512), data_format='channels_first'))
+    model.add(Conv2D(32, 3, 3, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    # model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid'))
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+
+    model.fit(-data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=10, nb_epoch=10, verbose=1)
+    model.save_weights(model_name)
+
+    model_json = model.to_json()
+    with open(model_json_file, "w") as json_file:
+        json.dump(model_json, json_file)
+
+    model.save_weights(model_name)
+
+if predicting:
+    with open(model_json_file, 'r') as f:
+        model_json = json.load(f)
+
+    model = model_from_json(model_json)
+    model.load_weights(model_name)
+    test_labels = model.predict_classes(-data_loaders["test"].dataset.imgs, verbose=0)
+    print(test_labels)
+    training_labels = model.predict_classes(-data_loaders["train"].dataset.imgs, verbose=0)
+    print(training_labels)
