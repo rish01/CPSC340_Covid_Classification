@@ -68,6 +68,14 @@ data_loaders = make_data_loaders()
 dataset_sizes = {'train': len(data_loaders['train'].dataset),
                  'test':len(data_loaders['test'].dataset)}
 
+# Normalize the provided data to [0, 1]
+dataset_min = torch.min(-data_loaders["train"].dataset.imgs)
+dataset_max = torch.max(-data_loaders["train"].dataset.imgs)
+dataset_range = dataset_max - dataset_min
+
+data_loaders["train"].dataset.imgs = torch.div(torch.add(-data_loaders["train"].dataset.imgs, -dataset_min), dataset_range)
+data_loaders["test"].dataset.imgs = torch.div(torch.add(-data_loaders["test"].dataset.imgs, -dataset_min), dataset_range)
+
 class_names = ['covid', 'background']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -95,10 +103,10 @@ if not os.listdir(test_images_rgb_folder):
         print(f"Saved {image_name}")
         index += 1
 
-training = False
+training = True
 predicting = True
-model_json_file = 'ImageNet_model.json'
-model_name = 'ImageNet_model.h5'
+model_json_file = 'ImageNet_model3.json'
+model_name = 'ImageNet_model3.h5'
 
 # ################################################ KERAS MODEL ##################################################### #
 if training:
@@ -126,7 +134,7 @@ if training:
                   optimizer='adam',
                   metrics=['accuracy'])
 
-    model.fit(-data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=10, nb_epoch=10, verbose=1)
+    model.fit(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=35, epochs=5, verbose=1)
     model.save_weights(model_name)
 
     model_json = model.to_json()
@@ -141,7 +149,7 @@ if predicting:
 
     model = model_from_json(model_json)
     model.load_weights(model_name)
-    test_labels = model.predict_classes(-data_loaders["test"].dataset.imgs, verbose=0)
+    test_labels = model.predict_classes(data_loaders["test"].dataset.imgs, verbose=0)
     print(test_labels)
-    training_labels = model.predict_classes(-data_loaders["train"].dataset.imgs, verbose=0)
+    training_labels = model.predict_classes(data_loaders["train"].dataset.imgs, verbose=0)
     print(training_labels)
