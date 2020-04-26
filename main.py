@@ -71,7 +71,7 @@ if not os.listdir(images_folder):
 if not os.listdir(grayscale_images_folder):
     index = 0
     for sample in data_loaders["train"].dataset.imgs:
-        image_name = f"Image_{index}.png"
+        image_name = f"Image_{index}_covid_{train_labels[index].numpy()}.png"
         plt.imsave(os.path.join(grayscale_images_folder, image_name), sample[0], cmap='gray')
         print(f"Saved {image_name}")
         index += 1
