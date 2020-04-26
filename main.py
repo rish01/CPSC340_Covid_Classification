@@ -17,7 +17,7 @@ import json
 
 from keras.models import Sequential, load_model, model_from_json
 from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D, MaxPooling2D, Conv2D
+from keras.layers import Convolution2D, MaxPooling2D, Conv2D, BatchNormalization
 from keras.utils import np_utils
 
 import pickle
@@ -74,7 +74,10 @@ dataset_max = torch.max(-data_loaders["train"].dataset.imgs)
 dataset_range = dataset_max - dataset_min
 
 data_loaders["train"].dataset.imgs = torch.div(torch.add(-data_loaders["train"].dataset.imgs, -dataset_min), dataset_range)
+data_loaders["train"].dataset.imgs = torch.add(data_loaders["train"].dataset.imgs, -0.5)
+
 data_loaders["test"].dataset.imgs = torch.div(torch.add(-data_loaders["test"].dataset.imgs, -dataset_min), dataset_range)
+data_loaders["test"].dataset.imgs = torch.add(data_loaders["test"].dataset.imgs, -0.5)
 
 class_names = ['covid', 'background']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -103,38 +106,51 @@ if not os.listdir(test_images_rgb_folder):
         print(f"Saved {image_name}")
         index += 1
 
-training = True
+training = False
 predicting = True
-model_json_file = 'ImageNet_model3.json'
-model_name = 'ImageNet_model3.h5'
+model_json_file = 'ImageNet_model4.json'
+model_name = 'ImageNet_model4.h5'
 
 # ################################################ KERAS MODEL ##################################################### #
 if training:
     print("Starting Keras Neural Network Training!")
     model = Sequential()
 
-    model.add(Conv2D(64, (3, 3), activation='relu', input_shape=(3, 512, 512), data_format='channels_first', padding="same"))
+    model.add(Conv2D(64, (3, 3), input_shape=(3, 512, 512), data_format='channels_first', padding="same"))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(128, (3, 3), activation='relu', padding="same"))
+    model.add(Conv2D(128, (3, 3), padding="same"))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(256, (3, 3), activation='relu', padding="same"))
+    model.add(Conv2D(256, (3, 3), padding="same"))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(512, (3, 3), activation='relu', padding="same"))
+    model.add(Conv2D(512, (3, 3), padding="same"))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(512, (3, 3), activation='relu', padding="same"))
+    model.add(Conv2D(512, (3, 3), padding="same"))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
 
     model.add(Flatten())
-    model.add(Dense(4096, activation='relu'))
-    model.add(Dense(128, activation='relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dense(4096))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
+    model.add(Dense(128))
+    model.add(BatchNormalization())
+    model.add(Activation("relu"))
     model.add(Dense(1, activation='sigmoid'))
 
     model.compile(loss='binary_crossentropy',
                   optimizer='adam',
                   metrics=['accuracy'])
 
-    model.fit(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=35, epochs=5, verbose=1)
+    model.fit(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=10, epochs=5, verbose=1)
     model.save_weights(model_name)
 
     model_json = model.to_json()
