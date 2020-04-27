@@ -18,11 +18,13 @@ import json
 from keras.models import Sequential, load_model, model_from_json
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D, Conv2D, BatchNormalization
+from keras import metrics
 from keras.utils import np_utils
 
 import pickle
 
 from CovidDataset import CovidDatasetTrain, CovidDatasetTest
+from COVID_Images_Sequence import COVIDImagesSequence
 
 train_imgs_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'train_images_512.pk')
 train_labels_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'train_labels_512.pk')
@@ -92,10 +94,10 @@ if not os.listdir(test_images_rgb_folder):
         print(f"Saved {image_name}")
         index += 1
 
-training = False
+training = True
 predicting = True
-model_json_file = 'ImageNet_model4.json'
-model_name = 'ImageNet_model4.h5'
+model_json_file = 'ImageNet_model_batch14_epoch10_sequence.json'
+model_name = 'ImageNet_model_batch14_epoch10_sequence.h5'
 
 # ################################################ KERAS MODEL ##################################################### #
 if training:
@@ -134,9 +136,11 @@ if training:
 
     model.compile(loss='binary_crossentropy',
                   optimizer='adam',
-                  metrics=['accuracy'])
+                  metrics=[metrics.binary_accuracy])
 
-    model.fit(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=10, epochs=5, verbose=1)
+    # model.fit(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=15, epochs=10, verbose=1)
+    model.fit(x=COVIDImagesSequence(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy(), 14),
+              epochs=10, verbose=1)
     model.save_weights(model_name)
 
     model_json = model.to_json()
@@ -151,7 +155,9 @@ if predicting:
 
     model = model_from_json(model_json)
     model.load_weights(model_name)
+    predicted_training_labels = model.predict_classes(data_loaders["train"].dataset.imgs, verbose=0)
+    tr_error = np.mean(predicted_training_labels != train_labels.numpy()[:, None])
+    print(predicted_training_labels)
+    print(f"Training Error is: {tr_error}")
     test_labels = model.predict_classes(data_loaders["test"].dataset.imgs, verbose=0)
     print(test_labels)
-    training_labels = model.predict_classes(data_loaders["train"].dataset.imgs, verbose=0)
-    print(training_labels)
