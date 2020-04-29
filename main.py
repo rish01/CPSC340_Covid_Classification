@@ -7,6 +7,7 @@ import torch.optim as optim
 from torch.optim import lr_scheduler
 import numpy as np
 import torchvision
+from sklearn.model_selection import GridSearchCV
 from torchvision import datasets, models, transforms
 from torch.utils.data import Dataset, DataLoader, SubsetRandomSampler
 from torchvision.models import resnet18, resnet34, resnet152
@@ -28,7 +29,7 @@ from FullyConnectedLinearModel import *
 
 if __name__ == '__main__':
     # ########################## IMPORTANT INPUT - SPECIFY WHICH MODEL TO RUN ############################################ #
-    model_to_run = "KERAS_CNN"      # Choose from KERAS_CNN, TRANSFER_LEARNING, FULLY_CONNECTED_LINEAR
+    model_to_run = "TRANSFER_LEARNING"      # Choose from KERAS_CNN, TRANSFER_LEARNING, FULLY_CONNECTED_LINEAR
     ########################################################################################################################
 
     # The data is located in the 'data' folder
