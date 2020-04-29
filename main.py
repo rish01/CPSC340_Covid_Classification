@@ -19,6 +19,8 @@ from sklearn.preprocessing import LabelBinarizer
 
 from keras_model import KerasModel
 from CovidDataset import CovidDatasetTrain, CovidDatasetTest
+from utils import save_results_in_csv
+from transfer_learning_model import TransferLearningModel
 
 # ########################## IMPORTANT INPUT - SPECIFY WHICH MODEL TO RUN ############################################ #
 model_to_run = "KERAS_CNN"      # Choose from KERAS_CNN, TRANSFER_LEARNING
@@ -48,20 +50,6 @@ def make_data_loaders():
         "train": DataLoader(train_dataset, batch_size=1, shuffle=True, num_workers=1),
         "test": DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=1),
     }
-
-
-def save_results_in_csv(y_pred):
-    '''
-    Saves the predictions of test lung images in the provided csv file
-    :param y_pred: numpy array containing the boolean predictions
-    '''
-    fname = os.path.join(os.path.abspath(__file__), '..', 'data', 'CPSC340_Q2_SUBMISSION.csv')
-    y_pred = y_pred.astype(bool)
-
-    df = pd.DataFrame(columns=['Id', 'Predicted'])
-    df['Id'] = np.arange(0, y_pred.shape[0])
-    df['Predicted'] = y_pred
-    df.to_csv(fname, index=False)
 
 
 data_loaders = make_data_loaders()
@@ -116,4 +104,40 @@ if model_to_run == "KERAS_CNN":
     save_results_in_csv(test_labels)
 
 elif model_to_run == "TRANSFER_LEARNING":
-    pass
+    #############################################
+    # Data Augmentation Transformations
+    data_transforms = {
+        'train': transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(256),
+            transforms.RandomHorizontalFlip(0.5),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+
+        ]),
+        'test': transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(256),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+
+        ]),
+    }
+
+    ### load Resnet152 pre-trained model
+    model_conv = torchvision.models.resnet152(pretrained=True)
+
+    model = TransferLearningModel(model_conv)
+
+    #Train the model with pre-trained Resnet
+    print("Training model...")
+    model_conv = model.fit(data_loaders, dataset_sizes,num_epochs=40)
+    print("Model Training Done")
+
+    # Make predictions for test data
+    print("Making predictions on test data...")
+    pred = model.predict(data_loaders, dataset_sizes)
+
+    # save the predictions for submission
+    save_results_in_csv(pred)
+    print('predictions saved and ready for submission')
