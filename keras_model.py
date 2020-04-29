@@ -38,9 +38,6 @@ class KerasModel:
         X = torch.div(torch.add(-X, -self.dataset_min), self.dataset_range)
         X = torch.add(X, -0.5)
 
-        self.X_test = torch.div(torch.add(-self.X_test, -self.dataset_min), self.dataset_range)
-        self.X_test = torch.add(self.X_test, -0.5)
-
         print("Starting Keras Neural Network Training!")
         model = Sequential()
         model.add(Conv2D(64, (5, 5), input_shape=(3, 512, 512), data_format='channels_first', padding="same"))

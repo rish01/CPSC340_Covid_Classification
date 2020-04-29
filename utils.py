@@ -2,6 +2,8 @@ import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from torchvision import datasets, models, transforms
+import torch
 
 def save_results_in_csv(y_pred):
     '''
