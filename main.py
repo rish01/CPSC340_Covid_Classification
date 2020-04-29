@@ -41,8 +41,41 @@ print(train_labels.shape)
 print(type(test_imgs))
 print(test_imgs.shape)
 
+#############################################
+    # Data Augmentation Transformations
 
-def make_data_loaders():
+data_transforms = {
+    'train': transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize(256),
+        transforms.RandomHorizontalFlip(0.5),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+
+    ]),
+    'test': transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize(256),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+
+    ]),
+}
+
+# Split data into train and validation
+def make_data_loaders_transfer_learning(batch_size=5):
+    train_dataset = CovidDatasetTrain(train_imgs, train_labels, transform = data_transforms['train'])
+    train_set, val_set = torch.utils.data.random_split(train_dataset, [50, 20])
+    test_dataset = CovidDatasetTest(test_imgs, transform=data_transforms['test'])
+
+    return {
+        "train": DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=1),
+        "val": DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=1),
+        "test": DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=1),
+
+    }
+
+def make_data_loaders_original():
     train_dataset = CovidDatasetTrain(train_imgs, train_labels)
     test_dataset = CovidDatasetTest(test_imgs)
 
@@ -52,7 +85,8 @@ def make_data_loaders():
     }
 
 
-data_loaders = make_data_loaders()
+data_loaders = make_data_loaders_transfer_learning()
+data_loaders_original = make_data_loaders_original()
 dataset_sizes = {'train': len(data_loaders['train'].dataset),
                  'test':len(data_loaders['test'].dataset)}
 
@@ -67,7 +101,7 @@ test_images_grayscale_folder = os.path.join(os.path.abspath(__file__), '..', 'te
 
 if not os.listdir(training_images_rgb_folder):
     index = 0
-    for sample in data_loaders["train"].dataset.imgs:
+    for sample in data_loaders_original["train"].dataset.imgs:
         image_name = f"Image_{index}_covid{train_labels[index].numpy()}.png"
         plt.imsave(os.path.join(training_images_rgb_folder, image_name), sample[0])
         plt.imsave(os.path.join(training_images_grayscale_folder, image_name), sample[0], cmap='gray')
@@ -76,7 +110,7 @@ if not os.listdir(training_images_rgb_folder):
 
 if not os.listdir(test_images_rgb_folder):
     index = 0
-    for sample in data_loaders["test"].dataset.imgs:
+    for sample in data_loaders_original["test"].dataset.imgs:
         image_name = f"Image_{index}.png"
         plt.imsave(os.path.join(test_images_rgb_folder, image_name), sample[0])
         plt.imsave(os.path.join(test_images_grayscale_folder, image_name), sample[0], cmap='gray')
@@ -91,8 +125,8 @@ if model_to_run == "KERAS_CNN":
     model_name_h5_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.h5')
 
     y_train = train_labels.numpy()
-    X_train = data_loaders["train"].dataset.imgs
-    X_test = data_loaders["test"].dataset.imgs
+    X_train = data_loaders_original["train"].dataset.imgs
+    X_test = data_loaders_original["test"].dataset.imgs
 
     keras_model = KerasModel(model_name_json_path=model_name_json_path, model_name_h5_path=model_name_h5_path, X=X_train)
     # keras_model.fit(X=X_train, y=y_train)
@@ -104,25 +138,7 @@ if model_to_run == "KERAS_CNN":
     save_results_in_csv(test_labels)
 
 elif model_to_run == "TRANSFER_LEARNING":
-    #############################################
-    # Data Augmentation Transformations
-    data_transforms = {
-        'train': transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize(256),
-            transforms.RandomHorizontalFlip(0.5),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 
-        ]),
-        'test': transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize(256),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-
-        ]),
-    }
 
     ### load Resnet152 pre-trained model
     model_conv = torchvision.models.resnet152(pretrained=True)
