@@ -19,7 +19,7 @@ from sklearn.preprocessing import LabelBinarizer
 
 from keras_model import KerasModel
 from CovidDataset import CovidDatasetTrain, CovidDatasetTest
-from utils import save_results_in_csv
+from utils import save_results_in_csv, save_images
 from transfer_learning_model import TransferLearningModel
 
 # ########################## IMPORTANT INPUT - SPECIFY WHICH MODEL TO RUN ############################################ #
@@ -92,30 +92,6 @@ dataset_sizes = {'train': len(data_loaders_transfer_learning['train'].dataset),
 
 class_names = ['covid', 'background']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-# Load and save the images if they haven't been saved already
-training_images_rgb_folder = os.path.join(os.path.abspath(__file__), '..', 'training_images_rgb')
-training_images_grayscale_folder = os.path.join(os.path.abspath(__file__), '..', 'training_images_grayscale')
-test_images_rgb_folder = os.path.join(os.path.abspath(__file__), '..', 'test_images_rgb')
-test_images_grayscale_folder = os.path.join(os.path.abspath(__file__), '..', 'test_images_grayscale')
-
-if not os.listdir(training_images_rgb_folder):
-    index = 0
-    for sample in data_loaders_original["train"].dataset.imgs:
-        image_name = f"Image_{index}_covid{train_labels[index].numpy()}.png"
-        plt.imsave(os.path.join(training_images_rgb_folder, image_name), sample[0])
-        plt.imsave(os.path.join(training_images_grayscale_folder, image_name), sample[0], cmap='gray')
-        print(f"Saved {image_name}")
-        index += 1
-
-if not os.listdir(test_images_rgb_folder):
-    index = 0
-    for sample in data_loaders_original["test"].dataset.imgs:
-        image_name = f"Image_{index}.png"
-        plt.imsave(os.path.join(test_images_rgb_folder, image_name), sample[0])
-        plt.imsave(os.path.join(test_images_grayscale_folder, image_name), sample[0], cmap='gray')
-        print(f"Saved {image_name}")
-        index += 1
 
 
 if model_to_run == "KERAS_CNN":
