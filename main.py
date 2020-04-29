@@ -14,19 +14,15 @@ import os
 import copy
 import pandas as pd
 import json
-
-from sklearn.preprocessing import LabelBinarizer
-from keras.models import Sequential, load_model, model_from_json
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Convolution2D, MaxPooling2D, Conv2D, BatchNormalization
-from keras import metrics
-from keras.utils import np_utils
-
 import pickle
+from sklearn.preprocessing import LabelBinarizer
 
+from keras_model import KerasModel
 from CovidDataset import CovidDatasetTrain, CovidDatasetTest
-from COVID_Images_Sequence import COVIDImagesSequence
-from COVID_Images_Callback import Metrics
+
+# ########################## IMPORTANT INPUT - SPECIFY WHICH MODEL TO RUN ############################################ #
+model_to_run = "KERAS_CNN"      # Choose from KERAS_CNN, TRANSFER_LEARNING
+########################################################################################################################
 
 train_imgs_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'train_images_512.pk')
 train_labels_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'train_labels_512.pk')
@@ -72,17 +68,6 @@ data_loaders = make_data_loaders()
 dataset_sizes = {'train': len(data_loaders['train'].dataset),
                  'test':len(data_loaders['test'].dataset)}
 
-# Normalize the provided data to [0, 1]
-dataset_min = torch.min(-data_loaders["train"].dataset.imgs)
-dataset_max = torch.max(-data_loaders["train"].dataset.imgs)
-dataset_range = dataset_max - dataset_min
-
-data_loaders["train"].dataset.imgs = torch.div(torch.add(-data_loaders["train"].dataset.imgs, -dataset_min), dataset_range)
-data_loaders["train"].dataset.imgs = torch.add(data_loaders["train"].dataset.imgs, -0.5)
-
-data_loaders["test"].dataset.imgs = torch.div(torch.add(-data_loaders["test"].dataset.imgs, -dataset_min), dataset_range)
-data_loaders["test"].dataset.imgs = torch.add(data_loaders["test"].dataset.imgs, -0.5)
-
 class_names = ['covid', 'background']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -111,79 +96,24 @@ if not os.listdir(test_images_rgb_folder):
         index += 1
 
 
+if model_to_run == "KERAS_CNN":
+    # ################################################ KERAS MODEL ################################################### #
+    # These file paths are specified so that model parameters can be saved after training
+    model_name_json_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.json')
+    model_name_h5_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.h5')
 
-# ################################################ KERAS MODEL ##################################################### #
+    y_train = train_labels.numpy()
+    X_train = data_loaders["train"].dataset.imgs
+    X_test = data_loaders["test"].dataset.imgs
 
-# This model replicates the CNN architecture present on slide 5 (ImageNet Insights) of lecture 35b.
-# Several inputs models were trialed but the ones present below yielded a training error of 15.71%
-y_train = train_labels.numpy()
-X_train = data_loaders["train"].dataset.imgs.numpy()
-X_test = data_loaders["test"].dataset.imgs
-training = False
-predicting = True
-model_json_file = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.json')
-model_name = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.h5')
+    keras_model = KerasModel(model_name_json_path=model_name_json_path, model_name_h5_path=model_name_h5_path, X=X_train)
+    # keras_model.fit(X=X_train, y=y_train)
 
-if training:
-    print("Starting Keras Neural Network Training!")
-    model = Sequential()
-
-    model.add(Conv2D(64, (5, 5), input_shape=(3, 512, 512), data_format='channels_first', padding="same"))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(128, (5, 5), padding="same"))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(256, (5, 5), padding="same"))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(512, (5, 5), padding="same"))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(512, (5, 5), padding="same"))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    model.add(Flatten())
-    model.add(Dense(4096))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(Dense(128))
-    model.add(BatchNormalization())
-    model.add(Activation("relu"))
-    model.add(Dense(1, activation='softmax'))
-
-    model.compile(loss='binary_crossentropy',
-                  optimizer='adam',
-                  metrics=[metrics.binary_accuracy])
-
-    model.validation_data = (X_train, y_train)
-
-
-    model.fit(X_train, y_train, batch_size=10, epochs=5, verbose=1, callbacks=[Metrics()])
-    # model.fit(x=COVIDImagesSequence(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy(), 10),
-              # epochs=5, verbose=1)
-    model.save_weights(model_name)
-
-    model_json = model.to_json()
-    with open(model_json_file, "w") as json_file:
-        json.dump(model_json, json_file)
-
-    model.save_weights(model_name)
-
-if predicting:
-    with open(model_json_file, 'r') as f:
-        model_json = json.load(f)
-
-    model = model_from_json(model_json)
-    model.load_weights(model_name)
-    y_pred = model.predict_classes(X_train, verbose=0)
+    y_pred = keras_model.predict(X_train)
     tr_error = np.mean(y_pred != y_train[:, None])
     print(f"Keras Model Training Error is: {tr_error}")
-    test_labels = model.predict_classes(X_test, verbose=0)
+    test_labels = keras_model.predict(X_test)
     save_results_in_csv(test_labels)
+
+elif model_to_run == "TRANSFER_LEARNING":
+    pass
