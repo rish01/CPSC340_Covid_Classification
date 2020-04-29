@@ -15,6 +15,7 @@ import copy
 import pandas as pd
 import json
 
+from sklearn.preprocessing import LabelBinarizer
 from keras.models import Sequential, load_model, model_from_json
 from keras.layers import Dense, Dropout, Activation, Flatten
 from keras.layers import Convolution2D, MaxPooling2D, Conv2D, BatchNormalization
@@ -25,6 +26,7 @@ import pickle
 
 from CovidDataset import CovidDatasetTrain, CovidDatasetTest
 from COVID_Images_Sequence import COVIDImagesSequence
+from COVID_Images_Callback import Metrics
 
 train_imgs_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'train_images_512.pk')
 train_labels_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'train_labels_512.pk')
@@ -57,7 +59,7 @@ def save_results_in_csv(y_pred):
     Saves the predictions of test lung images in the provided csv file
     :param y_pred: numpy array containing the boolean predictions
     '''
-    fname = 'CPSC340_Q2_SUBMISSION.csv'
+    fname = os.path.join(os.path.abspath(__file__), '..', 'data', 'CPSC340_Q2_SUBMISSION.csv')
     y_pred = y_pred.astype(bool)
 
     df = pd.DataFrame(columns=['Id', 'Predicted'])
@@ -108,33 +110,41 @@ if not os.listdir(test_images_rgb_folder):
         print(f"Saved {image_name}")
         index += 1
 
-training = True
-predicting = True
-model_json_file = 'ImageNet_model_batch14_epoch10_sequence.json'
-model_name = 'ImageNet_model_batch14_epoch10_sequence.h5'
+
 
 # ################################################ KERAS MODEL ##################################################### #
+
+# This model replicates the CNN architecture present on slide 5 (ImageNet Insights) of lecture 35b.
+# Several inputs models were trialed but the ones present below yielded a training error of 15.71%
+y_train = train_labels.numpy()
+X_train = data_loaders["train"].dataset.imgs.numpy()
+X_test = data_loaders["test"].dataset.imgs
+training = False
+predicting = True
+model_json_file = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.json')
+model_name = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.h5')
+
 if training:
     print("Starting Keras Neural Network Training!")
     model = Sequential()
 
-    model.add(Conv2D(64, (3, 3), input_shape=(3, 512, 512), data_format='channels_first', padding="same"))
+    model.add(Conv2D(64, (5, 5), input_shape=(3, 512, 512), data_format='channels_first', padding="same"))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(128, (3, 3), padding="same"))
+    model.add(Conv2D(128, (5, 5), padding="same"))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(256, (3, 3), padding="same"))
+    model.add(Conv2D(256, (5, 5), padding="same"))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(512, (3, 3), padding="same"))
+    model.add(Conv2D(512, (5, 5), padding="same"))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(512, (3, 3), padding="same"))
+    model.add(Conv2D(512, (5, 5), padding="same"))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
@@ -146,15 +156,18 @@ if training:
     model.add(Dense(128))
     model.add(BatchNormalization())
     model.add(Activation("relu"))
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(1, activation='softmax'))
 
     model.compile(loss='binary_crossentropy',
                   optimizer='adam',
                   metrics=[metrics.binary_accuracy])
 
-    # model.fit(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy()[:, None], batch_size=15, epochs=10, verbose=1)
-    model.fit(x=COVIDImagesSequence(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy(), 14),
-              epochs=10, verbose=1)
+    model.validation_data = (X_train, y_train)
+
+
+    model.fit(X_train, y_train, batch_size=10, epochs=5, verbose=1, callbacks=[Metrics()])
+    # model.fit(x=COVIDImagesSequence(data_loaders["train"].dataset.imgs.numpy(), train_labels.numpy(), 10),
+              # epochs=5, verbose=1)
     model.save_weights(model_name)
 
     model_json = model.to_json()
@@ -169,9 +182,8 @@ if predicting:
 
     model = model_from_json(model_json)
     model.load_weights(model_name)
-    predicted_training_labels = model.predict_classes(data_loaders["train"].dataset.imgs, verbose=0)
-    tr_error = np.mean(predicted_training_labels != train_labels.numpy()[:, None])
-    print(predicted_training_labels)
-    print(f"Training Error is: {tr_error}")
-    test_labels = model.predict_classes(data_loaders["test"].dataset.imgs, verbose=0)
-    print(test_labels)
+    y_pred = model.predict_classes(X_train, verbose=0)
+    tr_error = np.mean(y_pred != y_train[:, None])
+    print(f"Keras Model Training Error is: {tr_error}")
+    test_labels = model.predict_classes(X_test, verbose=0)
+    save_results_in_csv(test_labels)
