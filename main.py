@@ -85,10 +85,10 @@ def make_data_loaders_original():
     }
 
 
-data_loaders = make_data_loaders_transfer_learning()
+data_loaders_transfer_learning = make_data_loaders_transfer_learning()
 data_loaders_original = make_data_loaders_original()
-dataset_sizes = {'train': len(data_loaders['train'].dataset),
-                 'test':len(data_loaders['test'].dataset)}
+dataset_sizes = {'train': len(data_loaders_transfer_learning['train'].dataset),
+                 'test':len(data_loaders_transfer_learning['test'].dataset)}
 
 class_names = ['covid', 'background']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -138,8 +138,6 @@ if model_to_run == "KERAS_CNN":
     save_results_in_csv(test_labels)
 
 elif model_to_run == "TRANSFER_LEARNING":
-
-
     ### load Resnet152 pre-trained model
     model_conv = torchvision.models.resnet152(pretrained=True)
 
@@ -147,12 +145,12 @@ elif model_to_run == "TRANSFER_LEARNING":
 
     #Train the model with pre-trained Resnet
     print("Training model...")
-    model_conv = model.fit(data_loaders, dataset_sizes,num_epochs=40)
+    model_conv = model.fit(data_loaders_transfer_learning, dataset_sizes, num_epochs=40)
     print("Model Training Done")
 
     # Make predictions for test data
     print("Making predictions on test data...")
-    pred = model.predict(data_loaders, dataset_sizes)
+    pred = model.predict(data_loaders_transfer_learning, dataset_sizes)
 
     # save the predictions for submission
     save_results_in_csv(pred)
