@@ -25,7 +25,7 @@ from transfer_learning_model import TransferLearningModel
 
 if __name__ == '__main__':
     # ########################## IMPORTANT INPUT - SPECIFY WHICH MODEL TO RUN ############################################ #
-    model_to_run = "TRANSFER_LEARNING"      # Choose from KERAS_CNN, TRANSFER_LEARNING
+    model_to_run = "KERAS_CNN"      # Choose from KERAS_CNN, TRANSFER_LEARNING
     ########################################################################################################################
 
     # The data is located in the 'data' folder
@@ -103,8 +103,8 @@ if __name__ == '__main__':
     if model_to_run == "KERAS_CNN":
         # ################################################ KERAS MODEL ################################################### #
         # These file paths are specified so that model parameters can be saved after training
-        model_name_json_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model2.json')
-        model_name_h5_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model2.h5')
+        model_name_json_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.json')
+        model_name_h5_path = os.path.join(os.path.abspath(__file__), '..', 'data', 'Keras_best_model.h5')
 
         y_train = train_labels.numpy()
         X_train = data_loaders_original["train"].dataset.imgs
