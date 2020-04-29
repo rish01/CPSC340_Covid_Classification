@@ -87,11 +87,14 @@ if __name__ == '__main__':
             "test": DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=1),
         }
 
-
     data_loaders_transfer_learning = make_data_loaders_transfer_learning()
+    dataset_sizes_tl = {'train': len(data_loaders_transfer_learning['train'].dataset),
+                        'val': len(data_loaders_transfer_learning['val'].dataset),
+                        'test':len(data_loaders_transfer_learning['test'].dataset)}
     data_loaders_original = make_data_loaders_original()
-    dataset_sizes = {'train': len(data_loaders_transfer_learning['train'].dataset),
-                     'test':len(data_loaders_transfer_learning['test'].dataset)}
+    dataset_sizes = {'train': len(data_loaders_original['train'].dataset),
+                     'test':len(data_loaders_original['test'].dataset)}
+
 
     class_names = ['covid', 'background']
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -124,12 +127,12 @@ if __name__ == '__main__':
 
         #Train the model with pre-trained Resnet
         print("Training model...")
-        model_conv = model.fit(data_loaders_transfer_learning, dataset_sizes, num_epochs=40)
+        model_conv = model.fit(data_loaders_transfer_learning, dataset_sizes_tl, num_epochs=40)
         print("Model Training Done")
 
         # Make predictions for test data
         print("Making predictions on test data...")
-        pred = model.predict(data_loaders_transfer_learning, dataset_sizes)
+        pred = model.predict(data_loaders_transfer_learning, dataset_sizes_tl)
 
         # save the predictions for submission
         save_results_in_csv(pred)
