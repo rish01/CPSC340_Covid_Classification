@@ -14,3 +14,6 @@ The purpose of this part of the assignment is to classify whether a given X-ray 
 7. Install the required Python packages to the virtual environment using this command:<br />
 ```conda install -n covid19_classification_venv -r requirements.txt```
 8. Link the python.exe file present in the conda virtual environment folder to the interpreter of your IDE. 
+
+## Testing a Model
+Before running main.py file, please change the value of *model_to_run* variable present on line 32 to one of *KERAS_CNN, TRANSFER_LEARNING or FULLY_CONNECTED_LINEAR*.
