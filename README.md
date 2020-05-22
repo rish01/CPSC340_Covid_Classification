@@ -2,7 +2,7 @@
 
 The purpose of this part of the assignment is to classify whether a given X-ray of a lung is from a patient with COVID-19 or not. The report of this task is present [here](https://github.com/rish01/CPSC340_Covid19_Lung_Classification/blob/master/report/q2_covAId.pdf). 
 
-## Installation
+## Installation of Anaconda virtual environment
 1. Clone the repo on your system. 
 2. Install Anaconda from [here](https://www.anaconda.com/products/individual) which will be used to setup virtual environment for the project.
 3. Ensure conda is installed and in the PATH in your system's environment variables. 
@@ -14,6 +14,8 @@ The purpose of this part of the assignment is to classify whether a given X-ray 
 7. Install the required Python packages to the virtual environment using this command:<br />
 ```conda install -n covid19_classification_venv -r requirements.txt```
 8. Link the python.exe file present in the conda virtual environment folder to the interpreter of your IDE. 
+
+<br />
 
 ## Testing a Model
 Before running main.py file, please change the value of *model_to_run* variable present on line 32 to one of *KERAS_CNN, TRANSFER_LEARNING or FULLY_CONNECTED_LINEAR*.
