@@ -1,4 +1,4 @@
-# CPSC340 Final Assignment - COVID-19 Lung X-Ray Classification
+# CPSC340 Final Assignment Part 2 - COVID-19 Lung X-Ray Classification
 
 The purpose of this part of the assignment is to classify whether a given X-ray of a lung is from a patient with COVID-19 or not. The final report of this task is present [here](https://github.com/rish01/CPSC340_Covid19_Lung_Classification/blob/master/report/q2_covAId.pdf) and it contains description of given problem, machine learning models developed by me and my team, and results.
 
